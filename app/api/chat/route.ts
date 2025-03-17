@@ -35,11 +35,21 @@ export async function POST(request: Request) {
       message: response.data.choices[0].message.content || 'No response generated.'
     });
 
-  } catch (error: any) {
-    console.error('Error:', error.response?.data || error.message);
-    return NextResponse.json(
-      { error: error.response?.data?.error?.message || 'Failed to process the request' },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+  let errorMessage = 'Failed to process the request';
+
+  if (error instanceof Error) {
+    errorMessage = error.message;
+    if (typeof error === 'object' && error !== null && 'response' in error) {
+      const apiError = error as { response?: { data?: { error?: { message: string } } } };
+      errorMessage = apiError.response?.data?.error?.message || errorMessage;
+    }
   }
+
+  console.error('Error:', errorMessage);
+  return NextResponse.json(
+    { error: errorMessage },
+    { status: 500 }
+  );
+}
 }
